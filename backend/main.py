@@ -61,18 +61,24 @@ QUIZ_QUESTIONS = [
 ]
 
 
+# Mỗi phần tử answers frontend gửi lên sẽ có:
+# - question_id: id câu hỏi
+# - selected_answer: đáp án user chọn
 class AnswerItem(BaseModel):
     question_id: int
     selected_answer: str
 
 
+# Body tổng khi nộp bài:
+# { "answers": [ ... ] }
 class SubmitRequest(BaseModel):
     answers: List[AnswerItem]
 
 
 @app.get("/questions")
 def get_questions():
-    # Không trả về correct_answer để tránh lộ đáp án.
+    # API cho frontend lấy câu hỏi khi bắt đầu làm bài.
+    # Quan trọng: không trả correct_answer để tránh lộ đáp án.
     return [
         {
             "id": question["id"],
@@ -85,13 +91,15 @@ def get_questions():
 
 @app.post("/submit")
 def submit_quiz(payload: SubmitRequest):
-    # Đổi mảng answers thành dạng map để tra cứu nhanh theo question_id.
+    # Đổi mảng answers thành dạng map:
+    # question_id -> selected_answer
     answer_by_question_id = {item.question_id: item.selected_answer for item in payload.answers}
 
     details = []
     correct_count = 0
 
     # Chấm từng câu và tạo chi tiết đúng/sai cho frontend hiển thị.
+    # Nếu user bỏ trống câu nào, selected_answer sẽ là chuỗi rỗng.
     for question in QUIZ_QUESTIONS:
         selected_answer = answer_by_question_id.get(question["id"], "")
         is_correct = selected_answer == question["correct_answer"]
@@ -109,9 +117,14 @@ def submit_quiz(payload: SubmitRequest):
         )
 
     total_questions = len(QUIZ_QUESTIONS)
-    # Thang điểm 10.
+    # Quy đổi điểm theo thang 10.
     score = round((correct_count / total_questions) * 10, 2)
 
+    # Contract trả về đúng theo đề:
+    # - total_questions
+    # - correct_count
+    # - score
+    # - details: danh sách kết quả từng câu
     return {
         "total_questions": total_questions,
         "correct_count": correct_count,

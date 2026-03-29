@@ -1,8 +1,15 @@
 import React, { useEffect, useState } from "react";
 
+// Backend FastAPI chạy local ở cổng 8000.
 const API_BASE_URL = "http://127.0.0.1:8000";
 
 function App() {
+  // hasStarted: user đã bấm "Bắt đầu" hay chưa
+  // questionList: danh sách câu hỏi lấy từ backend
+  // selectedByQuestionId: lưu đáp án đã chọn theo question_id
+  // quizResult: kết quả backend trả về sau khi nộp bài
+  // isLoading: trạng thái đang gọi API
+  // errorMessage: thông báo lỗi hiển thị cho user
   const [hasStarted, setHasStarted] = useState(false);
   const [questionList, setQuestionList] = useState([]);
   const [selectedByQuestionId, setSelectedByQuestionId] = useState({});
@@ -39,6 +46,7 @@ function App() {
     loadQuestions();
   }, [hasStarted]);
 
+  // Bắt đầu lượt làm bài mới: reset kết quả và đáp án cũ.
   const handleStartQuiz = () => {
     setQuizResult(null);
     setSelectedByQuestionId({});
@@ -47,6 +55,7 @@ function App() {
     setHasStarted(true);
   };
 
+  // Lưu đáp án user chọn cho từng câu.
   const handleChooseAnswer = (questionId, answer) => {
     setSelectedByQuestionId((prev) => ({
       ...prev,
@@ -54,11 +63,13 @@ function App() {
     }));
   };
 
+  // Gửi đáp án lên backend để chấm điểm.
   const handleSubmitQuiz = async () => {
     setIsLoading(true);
     setErrorMessage("");
 
-    // Đổi dữ liệu sang đúng format backend yêu cầu.
+    // Đổi dữ liệu sang đúng contract backend yêu cầu:
+    // { answers: [{ question_id, selected_answer }, ...] }
     const answersPayload = questionList.map((question) => ({
       question_id: question.id,
       selected_answer: selectedByQuestionId[question.id] || "",
@@ -84,6 +95,7 @@ function App() {
     }
   };
 
+  // Tìm nội dung câu hỏi theo question_id để hiển thị trong phần kết quả.
   const findQuestionText = (questionId) => {
     const question = questionList.find((item) => item.id === questionId);
     return question ? question.question : "";
@@ -99,6 +111,7 @@ function App() {
         </button>
       )}
 
+      {/* Phần làm bài: hiển thị câu hỏi + chọn đáp án + nút nộp bài */}
       {hasStarted && !quizResult && (
         <div>
           {isLoading && <p>Đang tải...</p>}
@@ -137,6 +150,7 @@ function App() {
 
       {errorMessage && <p className="error-text">{errorMessage}</p>}
 
+      {/* Phần kết quả sau khi nộp bài */}
       {quizResult && (
         <div className="result-box">
           <h2>Kết quả</h2>
